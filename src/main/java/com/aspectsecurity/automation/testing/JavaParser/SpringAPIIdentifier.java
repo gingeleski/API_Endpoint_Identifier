@@ -9,6 +9,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.stream.Stream;
 
+import com.aspectsecurity.automation.testing.JavaParser.outputs.PrintOutput;
+import com.aspectsecurity.automation.testing.JavaParser.outputs.SwaggerOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +22,8 @@ import com.github.javaparser.ast.CompilationUnit;
 
 public class SpringAPIIdentifier
 {
+    private static final boolean PRINT_SWAGGER_JSON = true;
+
     private static ArrayList<Endpoint> endpoints = new ArrayList<>();
 
     public static final String TEST_FILE_PATH = System.getProperty("user.dir") + "\\src\\test\\resources\\com\\aspectsecurity\\automation\\testing\\JavaParser\\test\\";
@@ -43,6 +47,13 @@ public class SpringAPIIdentifier
         for (Path file : files) {
             logger.debug("Found file: " + file.toFile().toString());
             findEndpoints(file.toFile().toString());
+
+            if (PRINT_SWAGGER_JSON) {
+                System.out.println(SwaggerOutput.endpointsToSwagger(endpoints));
+            }
+            else {
+                PrintOutput.endpointsToPrint(endpoints);
+            }
         }
     }
 
@@ -58,28 +69,6 @@ public class SpringAPIIdentifier
 
         // Visit and print the methods' names
         cu.accept(new SpringAnnotationAnalyzer(), cu.getPackageDeclaration());
-
-        logger.debug("Printing Endpoint Info:");
-        for (Endpoint endpoint : endpoints)
-        {
-            logger.info("=====================================================");
-            logger.info("Name: " + (endpoint.getName() == null ? "<N/A>" : endpoint.getName()));
-            logger.info("URL: " + endpoint.getUrl());
-            logger.info("HTTP methods: " + endpoint.getMethods().toString());
-            logger.info("Consumes: " + endpoint.getConsumes().toString());
-            logger.info("Produces: " + endpoint.getProduces().toString());
-            logger.info("Part of class: "+ endpoint.getClazzName());
-
-            logger.info("Headers:");
-            for (Parameter header : endpoint.getHeaders()){
-                 logger.info("\t\t" + header.getHttpParameterName() + " = " + header.getDefaultValue());
-            }
-
-            logger.info("Parameters:");
-            for (Parameter param : endpoint.getParams()){
-                logger.info("\t\t" + param.getHttpParameterName() + " is a " + param.getAnnotation() + " of type " + param.getType() + " and a default value of " + (param.getDefaultValue().equals("") ? "<N/A>" : param.getDefaultValue())+ ". This input " + (param.isRequired() ? "is" : "is not") + " required.");
-            }
-        }
     }
 
     public static ArrayList<Endpoint> getEndpoints() {
